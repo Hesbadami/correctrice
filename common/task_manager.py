@@ -150,7 +150,7 @@ class ProgressBarManager:
                         parse_mode='HTML'
                     )
                     if sent_message:
-                        tracker.progress_message_id = sent_message.get("message", {}).get("message_id")
+                        tracker.progress_message_id = sent_message.get("message_id")
             except:
                 sent_message = await t.send_message(
                     chat_id=from_id,
@@ -158,14 +158,15 @@ class ProgressBarManager:
                     parse_mode='HTML'
                 )
                 if sent_message:
-                    tracker.progress_message_id = sent_message.get("message", {}).get("message_id")
+                    tracker.progress_message_id = sent_message.get("message_id")
         else:
+            message_text = "<code>"+message_text+"</code>"
             sent_message = await t.send_message(
                 chat_id=from_id,
                 text=message_text,
                 parse_mode='HTML'
             )
             if sent_message:
-                tracker.progress_message_id = sent_message.get("message", {}).get("message_id")
+                tracker.progress_message_id = sent_message.get("message_id")
 
 progress_manager = ProgressBarManager()

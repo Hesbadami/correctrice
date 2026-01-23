@@ -71,7 +71,7 @@ async def handle_transcription(data={}):
         reply_parameters={"message_id": message_id}
     )
     if sent_message:
-        await progress_manager.register_user_message(from_id, sent_message.get("message", {}).get("message_id"))
+        await progress_manager.register_user_message(from_id, sent_message.get("message_id"))
 
 @nc.sub("correctrice.send.correction")
 async def handle_correction(data={}):
@@ -85,7 +85,7 @@ async def handle_correction(data={}):
         reply_parameters={"message_id": message_id}
     )
     if sent_message:
-        await progress_manager.register_user_message(from_id, sent_message.get("message", {}).get("message_id"))
+        await progress_manager.register_user_message(from_id, sent_message.get("message_id"))
 
 
 @nc.sub("correctrice.send.affirmation")
@@ -103,4 +103,4 @@ async def handle_affirmation(data: dict = {}):
         }
     )
     if sent_message:
-        await progress_manager.register_user_message(from_id, sent_message.get("message", {}).get("message_id"))
+        await progress_manager.register_user_message(from_id, sent_message.get("message_id"))
