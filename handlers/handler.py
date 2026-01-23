@@ -91,10 +91,13 @@ async def handle_correction(data={}):
 @nc.sub("correctrice..send.affirmation")
 async def handle_affirmation(data: dict = {}):
 
+    logger.info(f"Getting Affirmation text.")
     message_id = data.get("message_id")
     from_id = data.get("from_id")
     affirmation = await o.affirmation()
 
+    logger.info(f"Got text: {affirmation}")
+    
     sent_message = await t.send_message(
         chat_id = from_id,
         text = affirmation,
