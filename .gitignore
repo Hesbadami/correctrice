@@ -1,0 +1,7 @@
+myenv
+**/__pycache__
+**/*.env
+**/*.log
+**/*.csv
+TODO.md
+audios/*.wav
