@@ -28,7 +28,7 @@ class NATSServer:
             await self.connect()
 
             await self.pub(
-                "nats_started", {
+                "correctrice.nats_started", {
                     "timestamp": datetime.now().isoformat()
                 }
             )
