@@ -144,6 +144,15 @@ class ProgressBarManager:
                     parse_mode='HTML'
                 )
                 if not result:
+                    # Delete old message before sending new one
+                    try:
+                        await t.delete_message(
+                            chat_id=from_id,
+                            message_id=tracker.progress_message_id
+                        )
+                    except:
+                        pass
+                    
                     sent_message = await t.send_message(
                         chat_id=from_id,
                         text=message_text,
@@ -152,6 +161,15 @@ class ProgressBarManager:
                     if sent_message:
                         tracker.progress_message_id = sent_message.get("message_id")
             except:
+                # Delete old message before sending new one
+                try:
+                    await t.delete_message(
+                        chat_id=from_id,
+                        message_id=tracker.progress_message_id
+                    )
+                except:
+                    pass
+                
                 sent_message = await t.send_message(
                     chat_id=from_id,
                     text=message_text,
