@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from datetime import datetime, timedelta
-from services.telegram import t
+from services.telegram import TelegramBot as t
 
 logger = logging.getLogger(__name__)
 
