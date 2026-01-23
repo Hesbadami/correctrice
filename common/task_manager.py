@@ -19,6 +19,7 @@ class UserProgressTracker:
         self.progress_message_id = None
         self.tasks = {}
         self.last_user_message_id = 0
+        self.send_lock = asyncio.Lock()  # Per-user lock for sending
 
 class ProgressBarManager:
     def __init__(self):
@@ -68,7 +69,9 @@ class ProgressBarManager:
             
             if tracker.progress_message_id and message_id > tracker.progress_message_id:
                 tracker.last_user_message_id = message_id
-                await self._send_progress(from_id)
+        
+        # Call outside main lock to avoid blocking other users
+        await self._send_progress(from_id)
     
     async def start_task(self, from_id, message_id, task_id=None):
         if task_id is None:
@@ -115,40 +118,68 @@ class ProgressBarManager:
         await self._send_progress(from_id)
     
     async def _send_progress(self, from_id):
-        if from_id not in self.users:
-            return
+        # Get tracker reference
+        async with self._lock:
+            if from_id not in self.users:
+                return
+            tracker = self.users[from_id]
         
-        tracker = self.users[from_id]
-        message_text = self._generate_message(tracker)
-        
-        if message_text is None:
-            if tracker.progress_message_id:
-                try:
-                    await t.delete_message(
-                        chat_id=from_id,
-                        message_id=tracker.progress_message_id
-                    )
-                except:
-                    pass
-                tracker.progress_message_id = None
-            return
-        
-        if tracker.progress_message_id:
+        # Use per-user send lock to prevent concurrent sends for same user
+        async with tracker.send_lock:
+            # Re-generate message inside send lock to get latest state
+            async with self._lock:
+                message_text = self._generate_message(tracker)
+                current_progress_msg_id = tracker.progress_message_id
+            
+            if message_text is None:
+                if current_progress_msg_id:
+                    try:
+                        await t.delete_message(
+                            chat_id=from_id,
+                            message_id=current_progress_msg_id
+                        )
+                    except:
+                        pass
+                    
+                    async with self._lock:
+                        tracker.progress_message_id = None
+                return
+            
             message_text = "<code>"+message_text+"</code>"
-            try:
-                result = await t.call(
-                    "editMessageText",
-                    chat_id=from_id,
-                    message_id=tracker.progress_message_id,
-                    text=message_text,
-                    parse_mode='HTML'
-                )
-                if not result:
+            
+            if current_progress_msg_id:
+                try:
+                    result = await t.call(
+                        "editMessageText",
+                        chat_id=from_id,
+                        message_id=current_progress_msg_id,
+                        text=message_text,
+                        parse_mode='HTML'
+                    )
+                    if not result:
+                        # Delete old message before sending new one
+                        try:
+                            await t.delete_message(
+                                chat_id=from_id,
+                                message_id=current_progress_msg_id
+                            )
+                        except:
+                            pass
+                        
+                        sent_message = await t.send_message(
+                            chat_id=from_id,
+                            text=message_text,
+                            parse_mode='HTML'
+                        )
+                        if sent_message:
+                            async with self._lock:
+                                tracker.progress_message_id = sent_message.get("message_id")
+                except:
                     # Delete old message before sending new one
                     try:
                         await t.delete_message(
                             chat_id=from_id,
-                            message_id=tracker.progress_message_id
+                            message_id=current_progress_msg_id
                         )
                     except:
                         pass
@@ -159,32 +190,16 @@ class ProgressBarManager:
                         parse_mode='HTML'
                     )
                     if sent_message:
-                        tracker.progress_message_id = sent_message.get("message_id")
-            except:
-                # Delete old message before sending new one
-                try:
-                    await t.delete_message(
-                        chat_id=from_id,
-                        message_id=tracker.progress_message_id
-                    )
-                except:
-                    pass
-                
+                        async with self._lock:
+                            tracker.progress_message_id = sent_message.get("message_id")
+            else:
                 sent_message = await t.send_message(
                     chat_id=from_id,
                     text=message_text,
                     parse_mode='HTML'
                 )
                 if sent_message:
-                    tracker.progress_message_id = sent_message.get("message_id")
-        else:
-            message_text = "<code>"+message_text+"</code>"
-            sent_message = await t.send_message(
-                chat_id=from_id,
-                text=message_text,
-                parse_mode='HTML'
-            )
-            if sent_message:
-                tracker.progress_message_id = sent_message.get("message_id")
+                    async with self._lock:
+                        tracker.progress_message_id = sent_message.get("message_id")
 
 progress_manager = ProgressBarManager()
