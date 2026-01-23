@@ -58,6 +58,8 @@ async def telegram_webhook(
                 'message_id': message_id,
                 'from_id': from_id
             }
+
+            logger.info("Received data")
             
             if 'video' in message:
                 video = message.get('video')
@@ -72,6 +74,9 @@ async def telegram_webhook(
                 video_note = message.get('video_note')
                 file_path = await get_video_note_path(video_note['file_id'])
             else:
+
+                logger.info(f"No media, sending affirmation")
+
                 await nc.pub(
                     "correctrice.send.affirmation",
                     data
