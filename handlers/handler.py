@@ -11,7 +11,7 @@ from services.gemini import gemini_manager as g
 logger = logging.getLogger(__name__)
 
 
-@nc.sub("file.received")
+@nc.sub("correctrice.file_received")
 async def handle_file(data={}):
     message_id = data.get("message_id")
     from_id = data.get("from_id")
@@ -40,7 +40,7 @@ async def handle_file(data={}):
     
     await progress_manager.update_progress(from_id, task_id, 60)
     data['transcription'] = transcription
-    await nc.pub("send.transcription", data)
+    await nc.pub("correctrice..send.transcription", data)
     
     await progress_manager.update_progress(from_id, task_id, 75)
     correction = await g.correct_text(transcription)
@@ -52,14 +52,14 @@ async def handle_file(data={}):
     
     await progress_manager.update_progress(from_id, task_id, 90)
     data['correction'] = correction
-    await nc.pub("send.correction", data)
+    await nc.pub("correctrice..send.correction", data)
     
     await progress_manager.update_progress(from_id, task_id, 100)
     await f.delete_audio(audio_path)
     
     await progress_manager.complete_task(from_id, task_id)
 
-@nc.sub("send.transcription")
+@nc.sub("correctrice..send.transcription")
 async def handle_transcription(data={}):
     message_id = data.get("message_id")
     from_id = data.get("from_id")
@@ -73,7 +73,7 @@ async def handle_transcription(data={}):
     if sent_message:
         await progress_manager.register_user_message(from_id, sent_message.get("message", {}).get("message_id"))
 
-@nc.sub("send.correction")
+@nc.sub("correctrice..send.correction")
 async def handle_correction(data={}):
     message_id = data.get("message_id")
     from_id = data.get("from_id")
@@ -88,7 +88,7 @@ async def handle_correction(data={}):
         await progress_manager.register_user_message(from_id, sent_message.get("message", {}).get("message_id"))
 
 
-@nc.sub("send.affirmation")
+@nc.sub("correctrice..send.affirmation")
 async def handle_affirmation(data: dict = {}):
 
     message_id = data.get("message_id")

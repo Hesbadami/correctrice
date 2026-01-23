@@ -73,7 +73,7 @@ async def telegram_webhook(
                 file_path = await get_video_note_path(video_note['file_id'])
             else:
                 await nc.pub(
-                    "send.affirmation",
+                    "correctrice.send.affirmation",
                     data
                 )
                 return {"status": "ok"}
@@ -83,7 +83,7 @@ async def telegram_webhook(
             }
             
             await nc.pub(
-                "file.received", data
+                "correctrice.file_received", data
             )
             
             logger.info(f"Received update:\n{json.dumps(update_data, indent=4)[:50]}...")
