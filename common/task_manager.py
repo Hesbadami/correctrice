@@ -137,7 +137,7 @@ class ProgressBarManager:
             # message_text = "<code>"+message_text+"</code>"
             try:
                 result = await t.call(
-                    "editMessage",
+                    "editMessageText",
                     chat_id=from_id,
                     message_id=tracker.progress_message_id,
                     text=message_text,
