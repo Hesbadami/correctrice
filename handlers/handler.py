@@ -35,7 +35,10 @@ async def handle_file(data={}):
     if not transcription:
         data['error'] = "Oops! Couldn't transcribe that one."
         await progress_manager.mark_error(from_id, task_id)
-        await f.delete_audio(audio_path)
+        try:
+            await f.delete_audio(audio_path)
+        except:
+            pass
         return
     
     await progress_manager.update_progress(from_id, task_id, 60)
@@ -47,7 +50,10 @@ async def handle_file(data={}):
     if not correction:
         data['error'] = "Oops! Couldn't correct that one."
         await progress_manager.mark_error(from_id, task_id)
-        await f.delete_audio(audio_path)
+        try:
+            await f.delete_audio(audio_path)
+        except:
+            pass
         return
     
     await progress_manager.update_progress(from_id, task_id, 90)
@@ -55,7 +61,10 @@ async def handle_file(data={}):
     await nc.pub("correctrice.send.correction", data)
     
     await progress_manager.update_progress(from_id, task_id, 100)
-    await f.delete_audio(audio_path)
+    try:
+        await f.delete_audio(audio_path)
+    except:
+        pass
     
     await progress_manager.complete_task(from_id, task_id)
 

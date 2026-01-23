@@ -133,13 +133,11 @@ class ProgressBarManager:
             
             if message_text is None:
                 if current_progress_msg_id:
-                    try:
-                        await t.delete_message(
-                            chat_id=from_id,
-                            message_id=current_progress_msg_id
-                        )
-                    except:
-                        pass
+                    r = await t.call(
+                        "deleteMessage",
+                        chat_id=from_id,
+                        message_id=current_progress_msg_id
+                    )
                     
                     async with self._lock:
                         tracker.progress_message_id = None
@@ -158,13 +156,11 @@ class ProgressBarManager:
                     )
                     if not result:
                         # Delete old message before sending new one
-                        try:
-                            await t.delete_message(
-                                chat_id=from_id,
-                                message_id=current_progress_msg_id
-                            )
-                        except:
-                            pass
+                        r = await t.call(
+                            "deleteMessage",
+                            chat_id=from_id,
+                            message_id=current_progress_msg_id
+                        )
                         
                         sent_message = await t.send_message(
                             chat_id=from_id,
@@ -176,14 +172,11 @@ class ProgressBarManager:
                                 tracker.progress_message_id = sent_message.get("message_id")
                 except:
                     # Delete old message before sending new one
-                    try:
-                        await t.call(
-                            "deleteMessage",
-                            chat_id=from_id,
-                            message_id=current_progress_msg_id
-                        )
-                    except:
-                        pass
+                    r = await t.call(
+                        "deleteMessage",
+                        chat_id=from_id,
+                        message_id=current_progress_msg_id
+                    )
                     
                     sent_message = await t.send_message(
                         chat_id=from_id,
