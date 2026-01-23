@@ -177,7 +177,8 @@ class ProgressBarManager:
                 except:
                     # Delete old message before sending new one
                     try:
-                        await t.delete_message(
+                        await t.call(
+                            "deleteMessage",
                             chat_id=from_id,
                             message_id=current_progress_msg_id
                         )
