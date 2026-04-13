@@ -63,7 +63,7 @@ PAGE = """<!doctype html>
 
   <div class="card">
     <h2>Add user</h2>
-    <form method="post" action="/admin/users">
+    <form method="post" action="/editron/users">
       <div class="grid">
         <div><label>Telegram ID</label><input name="user_id" type="text" required></div>
         <div><label>First name</label><input name="first_name" type="text" required></div>
@@ -101,14 +101,14 @@ ROW = """
   <td>{first_name} {last_name}</td>
   <td>{email}</td>
   <td>
-    <form class="inline" method="post" action="/admin/users/{id}">
+    <form class="inline" method="post" action="/editron/users/{id}">
       <input name="expiry_date" type="date" value="{expiry_date}" style="width:160px">
       <button type="submit" class="ghost">Update</button>
     </form>
   </td>
   <td>{badge}</td>
   <td>
-    <form class="inline" method="post" action="/admin/users/{id}/delete"
+    <form class="inline" method="post" action="/editron/users/{id}/delete"
           onsubmit="return confirm('Delete {first_name}?');">
       <button type="submit" class="danger">Delete</button>
     </form>
@@ -137,8 +137,8 @@ def _row(u):
 # Routes
 # ---------------------------------------------------------------------------
 
-@api.get("/admin", response_class=HTMLResponse)
-@api.get("/admin/", response_class=HTMLResponse)
+@api.get("/editron", response_class=HTMLResponse)
+@api.get("/editron/", response_class=HTMLResponse)
 async def admin_index():
     users = await db.aexecute_query(
         """
@@ -163,7 +163,7 @@ async def admin_index():
     )
 
 
-@api.post("/admin/users")
+@api.post("/editron/users")
 async def admin_create_user(
     user_id: str = Form(...),
     first_name: str = Form(...),
@@ -202,10 +202,10 @@ async def admin_create_user(
         logger.error(f"admin_create_user failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/editron", status_code=303)
 
 
-@api.post("/admin/users/{user_pk}")
+@api.post("/editron/users/{user_pk}")
 async def admin_update_expiry(user_pk: int, expiry_date: str = Form(...)):
     # Updating expiry clears the notice throttle so the user can be re-notified
     # cleanly if the new date is still in the past.
@@ -220,10 +220,10 @@ async def admin_update_expiry(user_pk: int, expiry_date: str = Form(...)):
         """,
         (expiry_date, user_pk),
     )
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/editron", status_code=303)
 
 
-@api.post("/admin/users/{user_pk}/delete")
+@api.post("/editron/users/{user_pk}/delete")
 async def admin_delete_user(user_pk: int):
     await db.aexecute_update(
         """
@@ -233,4 +233,4 @@ async def admin_delete_user(user_pk: int):
         """,
         (user_pk,),
     )
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/editron", status_code=303)
