@@ -86,7 +86,7 @@ async def telegram_webhook(request: Request = None):
         # Known but expired → throttled "please renew" notice, then drop.
         if not user["is_active"]:
             if user["notice_due"]:
-                await db.aexecute_query(
+                await db.aexecute_update(
                     """
                     UPDATE `user`
                     SET

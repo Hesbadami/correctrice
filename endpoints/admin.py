@@ -172,7 +172,7 @@ async def admin_create_user(
     expiry_date: str = Form(...),
 ):
     try:
-        await db.aexecute_query(
+        await db.aexecute_insert(
             """
             INSERT INTO `user` (
                 user_id,
@@ -209,7 +209,7 @@ async def admin_create_user(
 async def admin_update_expiry(user_pk: int, expiry_date: str = Form(...)):
     # Updating expiry clears the notice throttle so the user can be re-notified
     # cleanly if the new date is still in the past.
-    await db.aexecute_query(
+    await db.aexecute_update(
         """
         UPDATE `user`
         SET
@@ -225,7 +225,7 @@ async def admin_update_expiry(user_pk: int, expiry_date: str = Form(...)):
 
 @api.post("/admin/users/{user_pk}/delete")
 async def admin_delete_user(user_pk: int):
-    await db.aexecute_query(
+    await db.aexecute_update(
         """
         DELETE FROM `user`
         WHERE
