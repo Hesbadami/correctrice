@@ -113,3 +113,24 @@ async def handle_affirmation(data: dict = {}):
     )
     if sent_message:
         await progress_manager.register_user_message(from_id, sent_message.get("message_id"))
+
+@nc.sub("correctrice.send.expiry_notice")
+async def handle_expiry_notice(data: dict = {}):
+    message_id = data.get("message_id")
+    from_id = data.get("from_id")
+    
+    text = (
+        "⏳ Your access has expired.\n\n"
+        "Please renew to keep using the bot. "
+        "Contact the admin to extend your subscription."
+    )
+
+    sent_message = await t.send_message(
+        chat_id=from_id,
+        text=text,
+        reply_parameters={"message_id": message_id},
+    )
+    if sent_message:
+        await progress_manager.register_user_message(
+            from_id, sent_message.get("message_id")
+        )
