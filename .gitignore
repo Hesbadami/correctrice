@@ -1,4 +1,5 @@
 myenv
+log/*
 **/__pycache__
 **/*.env
 **/*.log
