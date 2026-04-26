@@ -1,7 +1,9 @@
 import logging
 from typing import Optional
+from collections import defaultdict
 import json
 import os
+import time
 
 from common.fastapi_server import api
 from common.mysql import MySQL as db
@@ -17,6 +19,30 @@ from services.telegram import TelegramBot as t
 from fastapi import Request, HTTPException
 
 logger = logging.getLogger("telegram")
+
+
+# --- Startup gate ----------------------------------------------------------
+# Drop every webhook that was queued before this process started.
+# Telegram will retry unacknowledged webhooks; this drains the backlog.
+_BOOT_TIME = time.time()
+_BOOT_GRACE = 300  # 5 minutes — ignore anything with message.date before boot
+
+
+# --- Per-user rate limiter (sliding window, in-memory) ---------------------
+_RATE_LIMIT = 5            # max media messages
+_RATE_WINDOW = 60          # per 60 seconds
+_user_timestamps: dict[int, list[float]] = defaultdict(list)
+
+
+def _is_rate_limited(user_id: int) -> bool:
+    now = time.time()
+    timestamps = _user_timestamps[user_id]
+    # Prune entries outside the window
+    _user_timestamps[user_id] = [ts for ts in timestamps if now - ts < _RATE_WINDOW]
+    if len(_user_timestamps[user_id]) >= _RATE_LIMIT:
+        return True
+    _user_timestamps[user_id].append(now)
+    return False
 
 
 async def get_video_path(file_id):
@@ -57,6 +83,11 @@ async def telegram_webhook(request: Request = None):
         from_id = message.get("from", {}).get("id")
 
         if not from_id:
+            return {"status": "ok"}
+
+        # --- Boot gate: drain pre-restart backlog --------------------------
+        message_date = message.get("date", 0)
+        if message_date < _BOOT_TIME - _BOOT_GRACE:
             return {"status": "ok"}
 
         # --- Access gate ---------------------------------------------------
@@ -106,12 +137,40 @@ async def telegram_webhook(request: Request = None):
         data = {"message_id": message_id, "from_id": from_id}
 
         if 'video' in message:
+            if _is_rate_limited(from_id):
+                await t.send_message(
+                    chat_id=from_id,
+                    text="⏳ You're sending too fast — please wait a moment and resend this one.",
+                    reply_parameters={"message_id": message_id},
+                )
+                return {"status": "ok"}
             file_path = await get_video_path(message['video']['file_id'])
         elif 'voice' in message:
+            if _is_rate_limited(from_id):
+                await t.send_message(
+                    chat_id=from_id,
+                    text="⏳ You're sending too fast — please wait a moment and resend this one.",
+                    reply_parameters={"message_id": message_id},
+                )
+                return {"status": "ok"}
             file_path = await get_voice_path(message['voice']['file_id'])
         elif 'audio' in message:
+            if _is_rate_limited(from_id):
+                await t.send_message(
+                    chat_id=from_id,
+                    text="⏳ You're sending too fast — please wait a moment and resend this one.",
+                    reply_parameters={"message_id": message_id},
+                )
+                return {"status": "ok"}
             file_path = await get_audio_path(message['audio']['file_id'])
         elif 'video_note' in message:
+            if _is_rate_limited(from_id):
+                await t.send_message(
+                    chat_id=from_id,
+                    text="⏳ You're sending too fast — please wait a moment and resend this one.",
+                    reply_parameters={"message_id": message_id},
+                )
+                return {"status": "ok"}
             file_path = await get_video_note_path(message['video_note']['file_id'])
         else:
             await nc.pub("correctrice.send.affirmation", data)
